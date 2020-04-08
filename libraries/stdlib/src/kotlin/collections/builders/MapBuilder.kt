@@ -24,6 +24,8 @@ internal class MapBuilder<K, V> private constructor(
     private var valuesView: HashMapValues<V>? = null
     private var entriesView: HashMapEntrySet<K, V>? = null
 
+    private var isReadOnly: Boolean = false
+
     // ---------------------------- functions ----------------------------
 
     constructor() : this(INITIAL_CAPACITY)
@@ -36,12 +38,19 @@ internal class MapBuilder<K, V> private constructor(
         INITIAL_MAX_PROBE_DISTANCE,
         0)
 
+    fun build(): Map<K, V> {
+        checkIsMutable()
+        isReadOnly = true
+        return this
+    }
+
     override fun isEmpty(): Boolean = _size == 0
     override fun containsKey(key: K): Boolean = findKey(key) >= 0
     override fun containsValue(value: V): Boolean = findValue(value) >= 0
 
 
     operator fun set(key: K, value: V): Unit {
+        checkIsMutable()
         put(key, value)
     }
 
@@ -52,6 +61,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     override fun put(key: K, value: V): V? {
+        checkIsMutable()
         val index = addKey(key)
         val valuesArray = allocateValuesArray()
         if (index < 0) {
@@ -65,11 +75,11 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     override fun putAll(from: Map<out K, V>) {
-        putAllEntries(from.entries)
+        putAllEntries(from.entries)  // mutability gets checked here
     }
 
     override fun remove(key: K): V? {
-        val index = removeKey(key)
+        val index = removeKey(key)  // mutability gets checked here
         if (index < 0) return null
         val valuesArray = valuesArray!!
         val oldValue = valuesArray[index]
@@ -78,6 +88,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     override fun clear() {
+        checkIsMutable()
         // O(length) implementation for hashArray cleanup
         for (i in 0..length - 1) {
             val hash = presenceArray[i]
@@ -152,6 +163,10 @@ internal class MapBuilder<K, V> private constructor(
 
     private val capacity: Int get() = keysArray.size
     private val hashSize: Int get() = hashArray.size
+
+    private fun checkIsMutable() {
+        if (isReadOnly) throw UnsupportedOperationException()
+    }
 
     private fun ensureExtraCapacity(n: Int) {
         ensureCapacity(length + n)
@@ -253,6 +268,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun addKey(key: K): Int {
+        checkIsMutable()
         retry@ while (true) {
             var hash = hash(key)
             // put is allowed to grow maxProbeDistance with some limits (resize hash on reaching limits)
@@ -286,6 +302,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun removeKey(key: K): Int {
+        checkIsMutable()
         val index = findKey(key)
         if (index < 0) return TOMBSTONE
         removeKeyAt(index)
@@ -355,24 +372,6 @@ internal class MapBuilder<K, V> private constructor(
         return valuesArray!![index] == entry.value
     }
 
-    internal fun getEntry(entry: Map.Entry<K, V>): MutableMap.MutableEntry<K, V>? {
-        val index = findKey(entry.key)
-        return if (index < 0 || valuesArray!![index] != entry.value) {
-            null
-        } else {
-            EntryRef(this, index)
-        }
-    }
-
-    internal fun getKey(key: K): K? {
-        val index = findKey(key)
-        return if (index >= 0) {
-            keysArray[index]!!
-        } else {
-            null
-        }
-    }
-
     private fun contentEquals(other: Map<*, *>): Boolean = _size == other.size && containsAllEntries(other.entries)
 
     internal fun containsAllEntries(m: Collection<*>): Boolean {
@@ -391,6 +390,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun putEntry(entry: Map.Entry<K, V>): Boolean {
+        checkIsMutable()
         val index = addKey(entry.key)
         val valuesArray = allocateValuesArray()
         if (index >= 0) {
@@ -406,6 +406,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun putAllEntries(from: Collection<Map.Entry<K, V>>): Boolean {
+        checkIsMutable()
         if (from.isEmpty()) return false
         ensureExtraCapacity(from.size)
         val it = from.iterator()
@@ -418,6 +419,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun removeEntry(entry: Map.Entry<K, V>): Boolean {
+        checkIsMutable()
         val index = findKey(entry.key)
         if (index < 0) return false
         if (valuesArray!![index] != entry.value) return false
@@ -426,6 +428,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun removeAllEntries(elements: Collection<Map.Entry<K, V>>): Boolean {
+        checkIsMutable()
         if (elements.isEmpty()) return false
         val it = entriesIterator()
         var updated = false
@@ -439,6 +442,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun retainAllEntries(elements: Collection<Map.Entry<K, V>>): Boolean {
+        checkIsMutable()
         val it = entriesIterator()
         var updated = false
         while (it.hasNext()) {
@@ -460,6 +464,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun removeValue(element: V): Boolean {
+        checkIsMutable()
         val index = findValue(element)
         if (index < 0) return false
         removeKeyAt(index)
@@ -467,6 +472,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun removeAllValues(elements: Collection<V>): Boolean {
+        checkIsMutable()
         val it = valuesIterator()
         var updated = false
         while (it.hasNext()) {
@@ -479,6 +485,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     internal fun retainAllValues(elements: Collection<V>): Boolean {
+        checkIsMutable()
         val it = valuesIterator()
         var updated = false
         while (it.hasNext()) {

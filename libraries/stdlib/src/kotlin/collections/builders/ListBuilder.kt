@@ -5,24 +5,25 @@
 
 package kotlin.collections.builders
 
-@PublishedApi
-internal class ListBuilder<E> private constructor(
+/*@PublishedApi
+internal */class ListBuilder<E> private constructor(
     private var array: Array<E>,
     private var offset: Int,
     private var length: Int,
+    private var isReadOnly: Boolean,
     private val backing: ListBuilder<E>?
 ) : MutableList<E>, RandomAccess, AbstractMutableCollection<E>() {
 
     constructor() : this(10)
 
     constructor(initialCapacity: Int) : this(
-        arrayOfUninitializedElements(initialCapacity), 0, 0, null)
+        arrayOfUninitializedElements(initialCapacity), 0, 0, false, null)
 
     fun build(): List<E> {
         if (backing != null) throw IllegalStateException() // just in case somebody casts subList to ListBuilder
-        val array = this.array
-//        this.array = null
-        return ImmutableList(length, array, offset)
+        checkIsMutable()
+        isReadOnly = true
+        return this
     }
 
     override val size: Int
@@ -31,12 +32,13 @@ internal class ListBuilder<E> private constructor(
     override fun isEmpty(): Boolean = length == 0
 
     override fun get(index: Int): E {
-        checkIndex(index)
+        AbstractList.checkElementIndex(index, length)
         return array[offset + index]
     }
 
     override operator fun set(index: Int, element: E): E {
-        checkIndex(index)
+        checkIsMutable()
+        AbstractList.checkElementIndex(index, length)
         val old = array[offset + index]
         array[offset + index] = element
         return old
@@ -54,7 +56,7 @@ internal class ListBuilder<E> private constructor(
     override fun containsAll(elements: Collection<E>): Boolean {
         val it = elements.iterator()
         while (it.hasNext()) {
-            if (!contains(it.next()))return false
+            if (!contains(it.next())) return false
         }
         return true
     }
@@ -81,60 +83,68 @@ internal class ListBuilder<E> private constructor(
     override fun listIterator(): MutableListIterator<E> = Itr(this, 0)
 
     override fun listIterator(index: Int): MutableListIterator<E> {
-        checkInsertIndex(index)
+        AbstractList.checkPositionIndex(index, length)
         return Itr(this, index)
     }
 
     override fun add(element: E): Boolean {
+        checkIsMutable()
         addAtInternal(offset + length, element)
         return true
     }
 
     override fun add(index: Int, element: E) {
-        checkInsertIndex(index)
+        checkIsMutable()
+        AbstractList.checkPositionIndex(index, length)
         addAtInternal(offset + index, element)
     }
 
     override fun addAll(elements: Collection<E>): Boolean {
+        checkIsMutable()
         val n = elements.size
         addAllInternal(offset + length, elements, n)
         return n > 0
     }
 
     override fun addAll(index: Int, elements: Collection<E>): Boolean {
-        checkInsertIndex(index)
+        checkIsMutable()
+        AbstractList.checkPositionIndex(index, length)
         val n = elements.size
         addAllInternal(offset + index, elements, n)
         return n > 0
     }
 
     override fun clear() {
+        checkIsMutable()
         removeRangeInternal(offset, length)
     }
 
     override fun removeAt(index: Int): E {
-        checkIndex(index)
+        checkIsMutable()
+        AbstractList.checkElementIndex(index, length)
         return removeAtInternal(offset + index)
     }
 
     override fun remove(element: E): Boolean {
+        checkIsMutable()
         val i = indexOf(element)
         if (i >= 0) removeAt(i)
         return i >= 0
     }
 
     override fun removeAll(elements: Collection<E>): Boolean {
+        checkIsMutable()
         return retainOrRemoveAllInternal(offset, length, elements, false) > 0
     }
 
     override fun retainAll(elements: Collection<E>): Boolean {
+        checkIsMutable()
         return retainOrRemoveAllInternal(offset, length, elements, true) > 0
     }
 
     override fun subList(fromIndex: Int, toIndex: Int): MutableList<E> {
-        checkInsertIndex(fromIndex)
-        checkInsertIndexFrom(toIndex, fromIndex)
-        return ListBuilder(array, offset + fromIndex, toIndex - fromIndex, this)
+        AbstractList.checkRangeIndexes(fromIndex, toIndex, length)
+        return ListBuilder(array, offset + fromIndex, toIndex - fromIndex, isReadOnly, this)
     }
 
     private fun ensureCapacity(minCapacity: Int) {
@@ -153,47 +163,25 @@ internal class ListBuilder<E> private constructor(
     }
 
     override fun hashCode(): Int {
-        var result = 1
-        var i = 0
-        while (i < length) {
-            val nextElement = array[offset + i]
-            val nextHash = if (nextElement != null) nextElement.hashCode() else 0
-            result = result * 31 + nextHash
-            i++
-        }
-        return result
+        return array.subarrayContentHashCode(offset, length)
     }
 
     override fun toString(): String {
-        return this.array.subarrayContentToString(offset, length)
+        return array.subarrayContentToString(offset, length)
     }
 
     // ---------------------------- private ----------------------------
+
+    private fun checkIsMutable() {
+        if (isReadOnly) throw UnsupportedOperationException()
+    }
 
     private fun ensureExtraCapacity(n: Int) {
         ensureCapacity(length + n)
     }
 
-    private fun checkIndex(index: Int) {
-        if (index < 0 || index >= length) throw IndexOutOfBoundsException()
-    }
-
-    private fun checkInsertIndex(index: Int) {
-        if (index < 0 || index > length) throw IndexOutOfBoundsException()
-    }
-
-    private fun checkInsertIndexFrom(index: Int, fromIndex: Int) {
-        if (index < fromIndex || index > length) throw IndexOutOfBoundsException()
-    }
-
     private fun contentEquals(other: List<*>): Boolean {
-        if (length != other.size) return false
-        var i = 0
-        while (i < length) {
-            if (array[offset + i] != other[i]) return false
-            i++
-        }
-        return true
+        return array.subarrayContentEquals(offset, length, other)
     }
 
     private fun insertAtInternal(i: Int, n: Int) {
@@ -307,7 +295,8 @@ internal class ListBuilder<E> private constructor(
         }
 
         override fun set(element: E) {
-            list.checkIndex(lastIndex)
+            list.checkIsMutable()
+            check(lastIndex != -1) { "Call next() or previous() before replacing element from the iterator." }
             list.array[list.offset + lastIndex] = element
         }
 
@@ -325,90 +314,14 @@ internal class ListBuilder<E> private constructor(
     }
 }
 
-private class ImmutableList<E>(
-    override val size: Int,
-    private val array: Array<E>,
-    private val offset: Int
-) : List<E> {
-
-    override fun contains(element: E): Boolean {
-        return indexOf(element) != -1
-    }
-
-    override fun containsAll(elements: Collection<E>): Boolean {
-        return elements.all { contains(it) }
-    }
-
-    override fun get(index: Int): E {
-        AbstractList.checkElementIndex(index, size)
-        return array[offset + index]
-    }
-
-    override fun indexOf(element: E): Int {
-        for (index in 0 until size) {
-            if (element == array[offset + index]) return index
-        }
-        return -1
-    }
-
-    override fun isEmpty(): Boolean {
-        return size == 0
-    }
-
-    override fun lastIndexOf(element: E): Int {
-        for (index in size - 1 downTo 0) {
-            if (element == array[offset + index]) return index
-        }
-        return -1
-    }
-
-    override fun iterator(): Iterator<E> = Itr(this, 0)
-    override fun listIterator(): ListIterator<E> = Itr(this, 0)
-
-    override fun listIterator(index: Int): ListIterator<E> {
-        AbstractList.checkPositionIndex(index, size)
-        return Itr(this, index)
-    }
-
-    override fun subList(fromIndex: Int, toIndex: Int): List<E> {
-        AbstractList.checkRangeIndexes(fromIndex, toIndex, size)
-        return ImmutableList(toIndex - fromIndex, array, offset + fromIndex)
-    }
-
-    private class Itr<E> : ListIterator<E> {
-        private val list: ImmutableList<E>
-        private var index: Int
-
-        constructor(list: ImmutableList<E>, index: Int) {
-            this.list = list
-            this.index = index
-        }
-
-        override fun hasPrevious(): Boolean = index > 0
-        override fun hasNext(): Boolean = index < list.size
-
-        override fun previousIndex(): Int = index - 1
-        override fun nextIndex(): Int = index
-
-        override fun previous(): E {
-            if (index <= 0) throw NoSuchElementException()
-            return list.array[list.offset + --index]
-        }
-
-        override fun next(): E {
-            if (index >= list.size) throw NoSuchElementException()
-            return list.array[list.offset + index++]
-        }
-    }
-}
-
 internal fun <E> arrayOfUninitializedElements(size: Int): Array<E> {
+    require(size >= 0) { "capacity must be non-negative." }
     @Suppress("UNCHECKED_CAST")
     return arrayOfNulls<Any?>(size) as Array<E>
 }
 
 @kotlin.internal.InlineOnly
-internal inline fun <T> Array<out T>.subarrayContentToString(offset: Int, length: Int): String {
+private inline fun <T> Array<out T>.subarrayContentToString(offset: Int, length: Int): String {
     val sb = StringBuilder(2 + length * 3)
     sb.append("[")
     var i = 0
@@ -419,6 +332,29 @@ internal inline fun <T> Array<out T>.subarrayContentToString(offset: Int, length
     }
     sb.append("]")
     return sb.toString()
+}
+
+@kotlin.internal.InlineOnly
+private inline fun <T> Array<T>.subarrayContentHashCode(offset: Int, length: Int): Int {
+    var result = 1
+    var i = 0
+    while (i < length) {
+        val nextElement = this[offset + i]
+        result = result * 31 + nextElement.hashCode()
+        i++
+    }
+    return result
+}
+
+@kotlin.internal.InlineOnly
+private inline fun <T> Array<T>.subarrayContentEquals(offset: Int, length: Int, other: List<*>): Boolean {
+    if (length != other.size) return false
+    var i = 0
+    while (i < length) {
+        if (this[offset + i] != other[i]) return false
+        i++
+    }
+    return true
 }
 
 internal fun <T> Array<T>.copyOfUninitializedElements(newSize: Int): Array<T> {

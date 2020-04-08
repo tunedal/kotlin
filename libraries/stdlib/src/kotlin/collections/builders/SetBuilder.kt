@@ -5,14 +5,19 @@
 
 package kotlin.collections.builders
 
-@PublishedApi
-internal class SetBuilder<E> internal constructor(
-    val backing: MapBuilder<E, *>
+/*@PublishedApi
+internal */class SetBuilder<E> internal constructor(
+    private val backing: MapBuilder<E, *>
 ) : MutableSet<E>, AbstractMutableCollection<E>() {
 
     constructor() : this(MapBuilder<E, Nothing>())
 
     constructor(initialCapacity: Int) : this(MapBuilder<E, Nothing>(initialCapacity))
+
+    fun build(): Set<E> {
+        backing.build()
+        return this
+    }
 
     override val size: Int get() = backing.size
     override fun isEmpty(): Boolean = backing.isEmpty()
