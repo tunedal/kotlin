@@ -5,8 +5,8 @@
 
 package kotlin.collections.builders
 
-/*@PublishedApi
-internal */class SetBuilder<E> internal constructor(
+@PublishedApi
+internal class SetBuilder<E> internal constructor(
     private val backing: MapBuilder<E, *>
 ) : MutableSet<E>, AbstractMutableCollection<E>() {
 

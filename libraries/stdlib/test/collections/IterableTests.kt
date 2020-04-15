@@ -6,8 +6,6 @@
 package test.collections
 
 import test.*
-import kotlin.collections.builders.ListBuilder
-import kotlin.collections.builders.SetBuilder
 import kotlin.test.*
 
 fun <T> iterableOf(vararg items: T): Iterable<T> = Iterable { items.iterator() }
@@ -18,10 +16,6 @@ class SetTest : IterableTests<Set<String>>({ setOf(*it) }, setOf())
 class LinkedSetTest : OrderedIterableTests<LinkedHashSet<String>>({ linkedSetOf(*it) }, linkedSetOf())
 class ListTest : OrderedIterableTests<List<String>>({ listOf(*it) }, listOf<String>())
 class ArrayListTest : OrderedIterableTests<ArrayList<String>>({ arrayListOf(*it) }, arrayListOf<String>())
-class ListBuilderTest : OrderedIterableTests<MutableList<String>>({ ListBuilder<String>().apply { addAll(it) } }, ListBuilder())
-class BuiltListTest : OrderedIterableTests<List<String>>({ ListBuilder<String>().apply { addAll(it) }.build() }, ListBuilder<String>().build())
-class SetBuilderTest : OrderedIterableTests<MutableSet<String>>({ SetBuilder<String>().apply { addAll(it) } }, SetBuilder())
-class BuiltSetTest : OrderedIterableTests<Set<String>>({ SetBuilder<String>().apply { addAll(it) }.build() }, SetBuilder<String>().build())
 
 abstract class OrderedIterableTests<T : Iterable<String>>(createFrom: (Array<out String>) -> T, empty: T) : IterableTests<T>(createFrom, empty) {
     @Test
