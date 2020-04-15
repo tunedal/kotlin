@@ -532,6 +532,7 @@ internal class MapBuilder<K, V> private constructor(
         fun hasNext(): Boolean = index < map.length
 
         fun remove() {
+            map.checkIsMutable()
             map.removeKeyAt(lastIndex)
             lastIndex = -1
         }
