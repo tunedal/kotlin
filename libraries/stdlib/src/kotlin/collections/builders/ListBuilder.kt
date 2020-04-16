@@ -12,7 +12,7 @@ internal class ListBuilder<E> private constructor(
     private var length: Int,
     private var isReadOnly: Boolean,
     private val backing: ListBuilder<E>?
-) : MutableList<E>, RandomAccess, AbstractMutableCollection<E>() {
+) : MutableList<E>, RandomAccess, AbstractMutableList<E>() {
 
     constructor() : this(10)
 
@@ -42,23 +42,6 @@ internal class ListBuilder<E> private constructor(
         val old = array[offset + index]
         array[offset + index] = element
         return old
-    }
-
-    override fun contains(element: E): Boolean {
-        var i = 0
-        while (i < length) {
-            if (array[offset + i] == element) return true
-            i++
-        }
-        return false
-    }
-
-    override fun containsAll(elements: Collection<E>): Boolean {
-        val it = elements.iterator()
-        while (it.hasNext()) {
-            if (!contains(it.next())) return false
-        }
-        return true
     }
 
     override fun indexOf(element: E): Int {
@@ -358,16 +341,11 @@ private inline fun <T> Array<T>.subarrayContentEquals(offset: Int, length: Int, 
 }
 
 internal fun <T> Array<T>.copyOfUninitializedElements(newSize: Int): Array<T> {
-    return copyOfUninitializedElements(0, newSize)
-}
-
-internal fun <T> Array<T>.copyOfUninitializedElements(fromIndex: Int, toIndex: Int): Array<T> {
-    val newSize = toIndex - fromIndex
     if (newSize < 0) {
-        throw IllegalArgumentException("$fromIndex > $toIndex")
+        throw IllegalArgumentException("Negative size: $newSize")
     }
     val result = arrayOfUninitializedElements<T>(newSize)
-    this.copyInto(result, 0, fromIndex, toIndex.coerceAtMost(size))
+    this.copyInto(result, 0, 0, newSize.coerceAtMost(size))
     return result
 }
 

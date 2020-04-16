@@ -427,74 +427,12 @@ internal class MapBuilder<K, V> private constructor(
         return true
     }
 
-    internal fun removeAllEntries(elements: Collection<Map.Entry<K, V>>): Boolean {
-        checkIsMutable()
-        if (elements.isEmpty()) return false
-        val it = entriesIterator()
-        var updated = false
-        while (it.hasNext()) {
-            if (elements.contains(it.next())) {
-                it.remove()
-                updated = true
-            }
-        }
-        return updated
-    }
-
-    internal fun retainAllEntries(elements: Collection<Map.Entry<K, V>>): Boolean {
-        checkIsMutable()
-        val it = entriesIterator()
-        var updated = false
-        while (it.hasNext()) {
-            if (!elements.contains(it.next())) {
-                it.remove()
-                updated = true
-            }
-        }
-        return updated
-    }
-
-    internal fun containsAllValues(elements: Collection<V>): Boolean {
-        val it = elements.iterator()
-        while (it.hasNext()) {
-            if (!containsValue(it.next()))
-                return false
-        }
-        return true
-    }
-
     internal fun removeValue(element: V): Boolean {
         checkIsMutable()
         val index = findValue(element)
         if (index < 0) return false
         removeKeyAt(index)
         return true
-    }
-
-    internal fun removeAllValues(elements: Collection<V>): Boolean {
-        checkIsMutable()
-        val it = valuesIterator()
-        var updated = false
-        while (it.hasNext()) {
-            if (elements.contains(it.next())) {
-                it.remove()
-                updated = true
-            }
-        }
-        return updated
-    }
-
-    internal fun retainAllValues(elements: Collection<V>): Boolean {
-        checkIsMutable()
-        val it = valuesIterator()
-        var updated = false
-        while (it.hasNext()) {
-            if (!elements.contains(it.next())) {
-                it.remove()
-                updated = true
-            }
-        }
-        return updated
     }
 
     internal fun keysIterator() = KeysItr(this)
@@ -619,19 +557,16 @@ internal class MapBuilder<K, V> private constructor(
 
 internal class HashMapValues<V> internal constructor(
     val backing: MapBuilder<*, V>
-) : MutableCollection<V> {
+) : MutableCollection<V>, AbstractMutableCollection<V>() {
 
     override val size: Int get() = backing.size
     override fun isEmpty(): Boolean = backing.isEmpty()
     override fun contains(element: V): Boolean = backing.containsValue(element)
-    override fun containsAll(elements: Collection<V>): Boolean = backing.containsAllValues(elements)
     override fun add(element: V): Boolean = throw UnsupportedOperationException()
     override fun addAll(elements: Collection<V>): Boolean = throw UnsupportedOperationException()
     override fun clear() = backing.clear()
     override fun iterator(): MutableIterator<V> = backing.valuesIterator()
     override fun remove(element: V): Boolean = backing.removeValue(element)
-    override fun removeAll(elements: Collection<V>): Boolean = backing.removeAllValues(elements)
-    override fun retainAll(elements: Collection<V>): Boolean = backing.retainAllValues(elements)
 
     override fun equals(other: Any?): Boolean =
         other === this ||
@@ -647,19 +582,17 @@ internal class HashMapValues<V> internal constructor(
         return result
     }
 
-    override fun toString(): String = collectionToString()
-
     // ---------------------------- private ----------------------------
 
     private fun contentEquals(other: Collection<*>): Boolean {
         @Suppress("UNCHECKED_CAST") // todo: figure out something better
-        return size == other.size && backing.containsAllValues(other as Collection<V>)
+        return size == other.size && containsAll(other as Collection<V>)
     }
 }
 
 internal class HashMapEntrySet<K, V> internal constructor(
     val backing: MapBuilder<K, V>
-) : MutableSet<MutableMap.MutableEntry<K, V>> {
+) : MutableSet<MutableMap.MutableEntry<K, V>>, AbstractMutableSet<MutableMap.MutableEntry<K, V>>() {
 
     override val size: Int get() = backing.size
     override fun isEmpty(): Boolean = backing.isEmpty()
@@ -670,41 +603,13 @@ internal class HashMapEntrySet<K, V> internal constructor(
     override fun iterator(): MutableIterator<MutableMap.MutableEntry<K, V>> = backing.entriesIterator()
     override fun containsAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean = backing.containsAllEntries(elements)
     override fun addAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean = backing.putAllEntries(elements)
-    override fun removeAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean = backing.removeAllEntries(elements)
-    override fun retainAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean = backing.retainAllEntries(elements)
-
-    override fun equals(other: Any?): Boolean =
-        other === this || other is Set<*> && contentEquals(other)
-
-    override fun hashCode(): Int {
-        var result = 0
-        val it = iterator()
-        while (it.hasNext()) {
-            result += it.next().hashCode()
-        }
-        return result
-    }
-
-    override fun toString(): String = collectionToString()
-
-    // ---------------------------- private ----------------------------
-
-    private fun contentEquals(other: Set<*>): Boolean {
-        @Suppress("UNCHECKED_CAST") // todo: get rid of unchecked cast here somehow
-        return size == other.size && backing.containsAllEntries(other as Collection<Map.Entry<*, *>>)
-    }
 }
 
 internal fun IntArray.copyOfUninitializedElements(newSize: Int): IntArray {
-    return copyOfUninitializedElements(0, newSize)
-}
-
-internal fun IntArray.copyOfUninitializedElements(fromIndex: Int, toIndex: Int): IntArray {
-    val newSize = toIndex - fromIndex
     if (newSize < 0) {
-        throw IllegalArgumentException("$fromIndex > $toIndex")
+        throw IllegalArgumentException("Negative size: $newSize")
     }
     val result = IntArray(newSize)
-    this.copyInto(result, 0, fromIndex, toIndex.coerceAtMost(size))
+    this.copyInto(result, 0, 0, newSize.coerceAtMost(size))
     return result
 }

@@ -2504,7 +2504,7 @@ public abstract class kotlin/collections/UShortIterator : java/util/Iterator, ko
 	public fun remove ()V
 }
 
-public final class kotlin/collections/builders/ListBuilder : kotlin/collections/AbstractMutableCollection, java/util/List, java/util/RandomAccess, kotlin/jvm/internal/markers/KMutableList {
+public final class kotlin/collections/builders/ListBuilder : kotlin/collections/AbstractMutableList, java/util/List, java/util/RandomAccess, kotlin/jvm/internal/markers/KMutableList {
 	public fun <init> ()V
 	public fun <init> (I)V
 	public fun add (ILjava/lang/Object;)V
@@ -2513,8 +2513,6 @@ public final class kotlin/collections/builders/ListBuilder : kotlin/collections/
 	public fun addAll (Ljava/util/Collection;)Z
 	public final fun build ()Ljava/util/List;
 	public fun clear ()V
-	public fun contains (Ljava/lang/Object;)Z
-	public fun containsAll (Ljava/util/Collection;)Z
 	public fun equals (Ljava/lang/Object;)Z
 	public fun get (I)Ljava/lang/Object;
 	public fun getSize ()I
@@ -2525,7 +2523,6 @@ public final class kotlin/collections/builders/ListBuilder : kotlin/collections/
 	public fun lastIndexOf (Ljava/lang/Object;)I
 	public fun listIterator ()Ljava/util/ListIterator;
 	public fun listIterator (I)Ljava/util/ListIterator;
-	public final fun remove (I)Ljava/lang/Object;
 	public fun remove (Ljava/lang/Object;)Z
 	public fun removeAll (Ljava/util/Collection;)Z
 	public fun removeAt (I)Ljava/lang/Object;
@@ -2565,22 +2562,17 @@ public final class kotlin/collections/builders/MapBuilder : java/util/Map, kotli
 	public final fun values ()Ljava/util/Collection;
 }
 
-public final class kotlin/collections/builders/SetBuilder : kotlin/collections/AbstractMutableCollection, java/util/Set, kotlin/jvm/internal/markers/KMutableSet {
+public final class kotlin/collections/builders/SetBuilder : kotlin/collections/AbstractMutableSet, java/util/Set, kotlin/jvm/internal/markers/KMutableSet {
 	public fun <init> ()V
 	public fun <init> (I)V
 	public fun add (Ljava/lang/Object;)Z
-	public fun addAll (Ljava/util/Collection;)Z
 	public final fun build ()Ljava/util/Set;
 	public fun clear ()V
 	public fun contains (Ljava/lang/Object;)Z
-	public fun containsAll (Ljava/util/Collection;)Z
-	public fun equals (Ljava/lang/Object;)Z
 	public fun getSize ()I
-	public fun hashCode ()I
 	public fun isEmpty ()Z
 	public fun iterator ()Ljava/util/Iterator;
 	public fun remove (Ljava/lang/Object;)Z
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class kotlin/collections/unsigned/UArraysKt {
