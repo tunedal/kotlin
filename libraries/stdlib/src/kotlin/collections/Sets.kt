@@ -149,7 +149,7 @@ public inline fun <E> buildSet(@BuilderInference builderAction: MutableSet<E>.()
 @kotlin.internal.InlineOnly
 public inline fun <E> buildSet(capacity: Int, @BuilderInference builderAction: MutableSet<E>.() -> Unit): Set<E> {
     contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
-    return SetBuilder<E>(mapCapacity(capacity)).apply(builderAction).build()
+    return SetBuilder<E>(capacity).apply(builderAction).build()
 }
 
 
