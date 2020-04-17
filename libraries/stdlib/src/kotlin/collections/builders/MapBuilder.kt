@@ -16,9 +16,8 @@ internal class MapBuilder<K, V> private constructor(
 ) : MutableMap<K, V> {
     private var hashShift: Int = computeShift(hashSize)
 
-    private var _size: Int = 0
-    override val size: Int
-        get() = _size
+    override var size: Int = 0
+        private set
 
     private var keysView: HashMapKeys<K>? = null
     private var valuesView: HashMapValues<V>? = null
@@ -44,7 +43,7 @@ internal class MapBuilder<K, V> private constructor(
         return this
     }
 
-    override fun isEmpty(): Boolean = _size == 0
+    override fun isEmpty(): Boolean = size == 0
     override fun containsKey(key: K): Boolean = findKey(key) >= 0
     override fun containsValue(value: V): Boolean = findValue(value) >= 0
 
@@ -99,7 +98,7 @@ internal class MapBuilder<K, V> private constructor(
         }
         keysArray.resetRange(0, length)
         valuesArray?.resetRange(0, length)
-        _size = 0
+        size = 0
         length = 0
     }
 
@@ -146,7 +145,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     override fun toString(): String {
-        val sb = StringBuilder(2 + _size * 3)
+        val sb = StringBuilder(2 + size * 3)
         sb.append("{")
         var i = 0
         val it = entriesIterator()
@@ -181,7 +180,7 @@ internal class MapBuilder<K, V> private constructor(
             presenceArray = presenceArray.copyOf(newSize)
             val newHashSize = computeHashSize(newSize)
             if (newHashSize > hashSize) rehash(newHashSize)
-        } else if (length + capacity - _size > this.capacity) {
+        } else if (length + capacity - size > this.capacity) {
             rehash(hashSize)
         }
     }
@@ -215,7 +214,7 @@ internal class MapBuilder<K, V> private constructor(
     }
 
     private fun rehash(newHashSize: Int) {
-        if (length > _size) compact()
+        if (length > size) compact()
         if (newHashSize != hashSize) {
             hashArray = IntArray(newHashSize)
             hashShift = computeShift(newHashSize)
@@ -285,7 +284,7 @@ internal class MapBuilder<K, V> private constructor(
                     keysArray[putIndex] = key
                     presenceArray[putIndex] = hash
                     hashArray[hash] = putIndex + 1
-                    _size++
+                    size++
                     if (probeDistance > maxProbeDistance) maxProbeDistance = probeDistance
                     return putIndex
                 }
@@ -313,7 +312,7 @@ internal class MapBuilder<K, V> private constructor(
         keysArray.resetAt(index)
         removeHashAt(presenceArray[index])
         presenceArray[index] = TOMBSTONE
-        _size--
+        size--
     }
 
     private fun removeHashAt(removedHash: Int) {
@@ -372,7 +371,7 @@ internal class MapBuilder<K, V> private constructor(
         return valuesArray!![index] == entry.value
     }
 
-    private fun contentEquals(other: Map<*, *>): Boolean = _size == other.size && containsAllEntries(other.entries)
+    private fun contentEquals(other: Map<*, *>): Boolean = size == other.size && containsAllEntries(other.entries)
 
     internal fun containsAllEntries(m: Collection<*>): Boolean {
         val it = m.iterator()
