@@ -47,12 +47,6 @@ internal class MapBuilder<K, V> private constructor(
     override fun containsKey(key: K): Boolean = findKey(key) >= 0
     override fun containsValue(value: V): Boolean = findValue(value) >= 0
 
-
-    operator fun set(key: K, value: V): Unit {
-        checkIsMutable()
-        put(key, value)
-    }
-
     override operator fun get(key: K): V? {
         val index = findKey(key)
         if (index < 0) return null
