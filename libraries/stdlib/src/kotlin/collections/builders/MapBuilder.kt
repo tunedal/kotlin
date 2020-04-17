@@ -178,7 +178,7 @@ internal class MapBuilder<K, V> private constructor(
             if (capacity > newSize) newSize = capacity
             keysArray = keysArray.copyOfUninitializedElements(newSize)
             valuesArray = valuesArray?.copyOfUninitializedElements(newSize)
-            presenceArray = presenceArray.copyOfUninitializedElements(newSize)
+            presenceArray = presenceArray.copyOf(newSize)
             val newHashSize = computeHashSize(newSize)
             if (newHashSize > hashSize) rehash(newHashSize)
         } else if (length + capacity - _size > this.capacity) {
@@ -617,13 +617,4 @@ internal class HashMapEntrySet<K, V> internal constructor(
     override fun iterator(): MutableIterator<MutableMap.MutableEntry<K, V>> = backing.entriesIterator()
     override fun containsAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean = backing.containsAllEntries(elements)
     override fun addAll(elements: Collection<MutableMap.MutableEntry<K, V>>): Boolean = backing.putAllEntries(elements)
-}
-
-internal fun IntArray.copyOfUninitializedElements(newSize: Int): IntArray {
-    if (newSize < 0) {
-        throw IllegalArgumentException("Negative size: $newSize")
-    }
-    val result = IntArray(newSize)
-    this.copyInto(result, 0, 0, newSize.coerceAtMost(size))
-    return result
 }

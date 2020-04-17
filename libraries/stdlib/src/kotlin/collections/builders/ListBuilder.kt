@@ -341,12 +341,8 @@ private inline fun <T> Array<T>.subarrayContentEquals(offset: Int, length: Int, 
 }
 
 internal fun <T> Array<T>.copyOfUninitializedElements(newSize: Int): Array<T> {
-    if (newSize < 0) {
-        throw IllegalArgumentException("Negative size: $newSize")
-    }
-    val result = arrayOfUninitializedElements<T>(newSize)
-    this.copyInto(result, 0, 0, newSize.coerceAtMost(size))
-    return result
+    @Suppress("UNCHECKED_CAST")
+    return copyOf(newSize) as Array<T>
 }
 
 @kotlin.internal.InlineOnly
