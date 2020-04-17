@@ -20,7 +20,7 @@ internal class MapBuilder<K, V> private constructor(
     override val size: Int
         get() = _size
 
-    private var keysView: SetBuilder<K>? = null
+    private var keysView: HashMapKeys<K>? = null
     private var valuesView: HashMapValues<V>? = null
     private var entriesView: HashMapEntrySet<K, V>? = null
 
@@ -106,7 +106,7 @@ internal class MapBuilder<K, V> private constructor(
     override val keys: MutableSet<K> get() {
         val cur = keysView
         return if (cur == null) {
-            val new = SetBuilder(this)
+            val new = HashMapKeys(this)
             keysView = new
             new
         } else cur
@@ -553,6 +553,20 @@ internal class MapBuilder<K, V> private constructor(
 
         override fun toString(): String = "$key=$value"
     }
+}
+
+internal class HashMapKeys<E> internal constructor(
+    private val backing: MapBuilder<E, *>
+) : MutableSet<E>, AbstractMutableSet<E>() {
+
+    override val size: Int get() = backing.size
+    override fun isEmpty(): Boolean = backing.isEmpty()
+    override fun contains(element: E): Boolean = backing.containsKey(element)
+    override fun clear() = backing.clear()
+    override fun add(element: E): Boolean = throw UnsupportedOperationException()
+    override fun addAll(elements: Collection<E>): Boolean = throw UnsupportedOperationException()
+    override fun remove(element: E): Boolean = backing.removeKey(element) >= 0
+    override fun iterator(): MutableIterator<E> = backing.keysIterator()
 }
 
 internal class HashMapValues<V> internal constructor(
