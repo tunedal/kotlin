@@ -26,6 +26,7 @@ interface KotlinCodeVisionHint {
     fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?)
 }
 
+//todo is translation needed?
 const val IMPLEMENTATIONS_HINT_FORMAT = "{0, choice, 1#1 Implementation|2#{0,number} Implementations}"
 const val INHERITORS_HINT_FORMAT = "{0, choice, 1#1 Inheritor|2#{0,number} Inheritors}"
 const val OVERRIDES_HINT_FORMAT = "{0, choice, 1#1 Override|2#{0,number} Overrides}"

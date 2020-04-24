@@ -147,7 +147,7 @@ class KotlinCodeVisionHintsCollector(editor: Editor, val settings: KotlinCodeVis
         return AttributesTransformerPresentation(presentation) {
             val attributes = EditorColorsManager.getInstance()
                 .globalScheme.getAttributes(EditorColors.REFERENCE_HYPERLINK_COLOR).clone()
-            attributes.apply { effectType = EffectType.LINE_UNDERSCORE }
+            attributes.apply { effectType = null }
         }
     }
 
