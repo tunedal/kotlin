@@ -69,12 +69,10 @@ class KotlinCodeVisionHintsCollector(editor: Editor, val settings: KotlinCodeVis
             searchUsages(element)?.let { hints += it }
 
         if (settings.showImplementations) {
-            when {
-                element is KtFunction && element.isAbstract() -> searchFunctionImplementations(element)?.let { hints += it }
-                element is KtFunction -> searchFunctionOverrides(element)?.let { hints += it }
-                element is KtClass && element.isInterface() -> searchInterfaceImplementations(element)?.let { hints += it }
-                element is KtClass -> searchClassInheritors(element)?.let { hints += it }
-                element is KtProperty -> searchPropertyOverriding(element)?.let { hints += it }
+            when (element) {
+                is KtFunction -> searchFunctionOverrides(element)?.let { hints += it }
+                is KtClass -> searchClassInheritors(element)?.let { hints += it }
+                is KtProperty -> searchPropertyOverriding(element)?.let { hints += it }
             }
         }
 
@@ -84,38 +82,25 @@ class KotlinCodeVisionHintsCollector(editor: Editor, val settings: KotlinCodeVis
         return true
     }
 
-    // todo: 3 functions below look very similar
-    private fun searchFunctionOverrides(function: KtFunction): FunctionOverrides? {
+    private fun searchFunctionOverrides(function: KtFunction): InlResult? {
         return LightClassUtil.getLightClassMethod(function)?.let { it ->
             val overridingNum = OverridingMethodsSearch.search(it, true).count()
-            if (overridingNum > 0) FunctionOverrides(overridingNum) else null
+            if (overridingNum > 0) {
+                if (function.isAbstract()) FunctionImplementations(overridingNum) else FunctionOverrides(overridingNum)
+            } else null
         }
     }
 
-    private fun searchFunctionImplementations(function: KtFunction): FunctionImplementations? {
-        assert(function.isAbstract())
-        return LightClassUtil.getLightClassMethod(function)?.let { it ->
-            val overridingNum = OverridingMethodsSearch.search(it, true).count()
-            if (overridingNum > 0) FunctionImplementations(overridingNum) else null
-        }
-    }
-
-    private fun searchInterfaceImplementations(clazz: KtClass): InterfaceImplementations? {
-        assert(clazz.isInterface())
+    private fun searchClassInheritors(clazz: KtClass): InlResult? {
         return clazz.toLightClass()?.let {
             val inheritorsNum = DirectClassInheritorsSearch.search(it, clazz.useScope, true).count()
-            if (inheritorsNum > 0) InterfaceImplementations(inheritorsNum) else null
+            if (inheritorsNum > 0) {
+                if (clazz.isInterface()) InterfaceImplementations(inheritorsNum) else ClassInheritors(inheritorsNum)
+            } else null
         }
     }
 
-    private fun searchClassInheritors(clazz: KtClass): ClassInheritors? {
-        return clazz.toLightClass()?.let {
-            val inheritorsNum = DirectClassInheritorsSearch.search(it, clazz.useScope, true).count()
-            if (inheritorsNum > 0) ClassInheritors(inheritorsNum) else null
-        }
-    }
-
-    private fun searchPropertyOverriding(property: KtProperty): PropertyOverrides? {
+    private fun searchPropertyOverriding(property: KtProperty): InlResult? {
         var overridingNum = 0
         for (method in property.toPossiblyFakeLightMethods()) {
             method.forEachOverridingMethod {
