@@ -531,6 +531,7 @@ internal class MapBuilder<K, V> private constructor(
             get() = map.valuesArray!![index]
 
         override fun setValue(newValue: V): V {
+            map.checkIsMutable()
             val valuesArray = map.allocateValuesArray()
             val oldValue = valuesArray[index]
             valuesArray[index] = newValue

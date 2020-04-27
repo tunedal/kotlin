@@ -32,7 +32,9 @@ class ContainerBuilderTest {
         { put(k, v) },
         { remove(k) },
         { putAll(mapOf(k to v)) },
-        { clear() }
+        { clear() },
+        { entries.first().setValue(v) },
+        { entries.iterator().next().setValue(v) }
     )
 
     @Test
