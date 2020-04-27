@@ -350,6 +350,10 @@ abstract class KtLightClassForSourceDeclaration(
                 return null
             }
 
+            if (classOrObject.containingKtFile.safeIsScript()) {
+                return null
+            }
+
             if (!forceUsingOldLightClasses && Registry.`is`("kotlin.use.ultra.light.classes", true)) {
                 LightClassGenerationSupport.getInstance(classOrObject.project).createUltraLightClass(classOrObject)?.let { return it }
             }
@@ -374,7 +378,8 @@ abstract class KtLightClassForSourceDeclaration(
             val containingScript = classOrObject.containingKtFile.safeScript()
             return when {
                 !classOrObject.safeIsLocal() && containingScript != null ->
-                    KtLightClassForScript.getLightClassCachedValue(containingScript).value
+                    return InvalidLightClassDataHolder
+                    //KtLightClassForScript.getLightClassCachedValue(containingScript).value
                 else ->
                     getLightClassCachedValue(classOrObject).value
             }
