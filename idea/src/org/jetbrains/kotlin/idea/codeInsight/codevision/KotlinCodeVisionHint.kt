@@ -26,11 +26,19 @@ interface KotlinCodeVisionHint {
     fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?)
 }
 
-//todo is translation needed?
+//todo localization?
 const val IMPLEMENTATIONS_HINT_FORMAT = "{0, choice, 1#1 Implementation|2#{0,number} Implementations}"
+const val TOO_MANY_IMPLEMENTATIONS_HINT_FORMAT = "{0,number}+ Implementations"
+
 const val INHERITORS_HINT_FORMAT = "{0, choice, 1#1 Inheritor|2#{0,number} Inheritors}"
+const val TOO_MANY_INHERITORS_HINT_FORMAT = "{0,number}+ Inheritors"
+
 const val OVERRIDES_HINT_FORMAT = "{0, choice, 1#1 Override|2#{0,number} Overrides}"
-const val USAGES_HINT_FORMAT = "{0,choice, 0#no Usages|1#1 Usage|2#{0,number} Usages}"
+const val TOO_MANY_OVERRIDES_HINT_FORMAT = "{0,number}+ Overrides"
+
+
+const val USAGES_HINT_FORMAT = "{0, choice, 1#1 Usage|2#{0,number} Usages}"
+const val TOO_MANY_USAGES_HINT_FORMAT = "{0,number}+ Usages"
 
 //todo WARN - collectors.FUCounterUsageLogger - Cannot record event because group 'kotlin.code.vision' is not registered.
 const val FUS_GROUP_ID = "kotlin.code.vision"
@@ -39,8 +47,10 @@ const val INHERITORS_CLICKED_EVENT_ID = "inheritors.clicked"
 const val IMPLEMENTATIONS_CLICKED_EVENT_ID = "implementations.clicked" // todo OVERRIDINGS?
 const val SETTING_CLICKED_EVENT_ID = "setting.clicked"
 
-class Usages(usagesNum: Int) : KotlinCodeVisionHint {
-    override val regularText: String = MessageFormat.format(USAGES_HINT_FORMAT, usagesNum)
+class Usages(usagesNum: Int, limitReached: Boolean) : KotlinCodeVisionHint {
+    override val regularText: String = MessageFormat.format(
+        if (limitReached) TOO_MANY_USAGES_HINT_FORMAT else USAGES_HINT_FORMAT, usagesNum
+    )
 
     override fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?) {
         FUCounterUsageLogger.getInstance().logEvent(editor.project, FUS_GROUP_ID, USAGES_CLICKED_EVENT_ID)
@@ -48,8 +58,10 @@ class Usages(usagesNum: Int) : KotlinCodeVisionHint {
     }
 }
 
-class FunctionOverrides(overridesNum: Int) : KotlinCodeVisionHint {
-    override val regularText: String = MessageFormat.format(OVERRIDES_HINT_FORMAT, overridesNum)
+class FunctionOverrides(overridesNum: Int, limitReached: Boolean) : KotlinCodeVisionHint {
+    override val regularText: String = MessageFormat.format(
+        if (limitReached) TOO_MANY_OVERRIDES_HINT_FORMAT else OVERRIDES_HINT_FORMAT, overridesNum
+    )
 
     override fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?) {
         val data = FeatureUsageData().addData("location", "function")
@@ -59,9 +71,11 @@ class FunctionOverrides(overridesNum: Int) : KotlinCodeVisionHint {
     }
 }
 
-class FunctionImplementations(overridesNum: Int) :
+class FunctionImplementations(overridesNum: Int, limitReached: Boolean) :
     KotlinCodeVisionHint {
-    override val regularText: String = MessageFormat.format(IMPLEMENTATIONS_HINT_FORMAT, overridesNum)
+    override val regularText: String = MessageFormat.format(
+        if (limitReached) TOO_MANY_IMPLEMENTATIONS_HINT_FORMAT else IMPLEMENTATIONS_HINT_FORMAT, overridesNum
+    )
 
     override fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?) {
         val data = FeatureUsageData().addData("location", "function")
@@ -71,8 +85,10 @@ class FunctionImplementations(overridesNum: Int) :
     }
 }
 
-class PropertyOverrides(overridesNum: Int) : KotlinCodeVisionHint {
-    override val regularText: String = MessageFormat.format(OVERRIDES_HINT_FORMAT, overridesNum) //todo inconsistent with the popup
+class PropertyOverrides(overridesNum: Int, limitReached: Boolean) : KotlinCodeVisionHint {
+    override val regularText: String = MessageFormat.format(
+        if (limitReached) TOO_MANY_OVERRIDES_HINT_FORMAT else OVERRIDES_HINT_FORMAT, overridesNum
+    ) //todo inconsistent with the popup
 
     override fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?) {
         val data = FeatureUsageData().addData("location", "property")
@@ -82,8 +98,10 @@ class PropertyOverrides(overridesNum: Int) : KotlinCodeVisionHint {
     }
 }
 
-class ClassInheritors(inheritorsNum: Int) : KotlinCodeVisionHint {
-    override val regularText: String = MessageFormat.format(INHERITORS_HINT_FORMAT, inheritorsNum)
+class ClassInheritors(inheritorsNum: Int, limitReached: Boolean) : KotlinCodeVisionHint {
+    override val regularText: String = MessageFormat.format(
+        if (limitReached) TOO_MANY_INHERITORS_HINT_FORMAT else INHERITORS_HINT_FORMAT, inheritorsNum
+    )
 
     override fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?) {
         val data = FeatureUsageData().addData("location", "class")
@@ -93,8 +111,10 @@ class ClassInheritors(inheritorsNum: Int) : KotlinCodeVisionHint {
     }
 }
 
-class InterfaceImplementations(implNum: Int) : KotlinCodeVisionHint {
-    override val regularText: String = MessageFormat.format(IMPLEMENTATIONS_HINT_FORMAT, implNum)
+class InterfaceImplementations(implNum: Int, limitReached: Boolean) : KotlinCodeVisionHint {
+    override val regularText: String = MessageFormat.format(
+        if (limitReached) TOO_MANY_IMPLEMENTATIONS_HINT_FORMAT else IMPLEMENTATIONS_HINT_FORMAT, implNum
+    )
 
     override fun onClick(editor: Editor, element: PsiElement, event: MouseEvent?) {
         val data = FeatureUsageData().addData("location", "interface")

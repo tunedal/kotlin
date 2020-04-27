@@ -14,18 +14,21 @@ import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.DirectClassInheritorsSearch
+import com.intellij.psi.search.searches.MethodReferencesSearch
 import com.intellij.psi.search.searches.OverridingMethodsSearch
+import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.util.ArrayUtil
+import com.intellij.util.Processor
 import org.jetbrains.kotlin.asJava.LightClassUtil
+import org.jetbrains.kotlin.asJava.getRepresentativeLightMethod
 import org.jetbrains.kotlin.asJava.toLightClass
 import org.jetbrains.kotlin.idea.refactoring.isAbstract
-import org.jetbrains.kotlin.idea.search.declarationsSearch.forEachOverridingMethod
 import org.jetbrains.kotlin.idea.search.declarationsSearch.toPossiblyFakeLightMethods
-import org.jetbrains.kotlin.idea.search.usagesSearch.searchReferencesOrMethodReferences
+import org.jetbrains.kotlin.idea.search.ideaExtensions.KotlinDefinitionsSearcher
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
@@ -35,13 +38,17 @@ import org.jetbrains.kotlin.utils.SmartList
 @Suppress("UnstableApiUsage")
 class KotlinCodeVisionHintsCollector(editor: Editor, val settings: KotlinCodeVisionSettings) : FactoryInlayHintsCollector(editor) {
 
+    companion object {
+        private const val USAGES_LIMIT: Int = 100
+        private const val INHERITANCE_LIMIT: Int = 100
+    }
+
     override fun collect(element: PsiElement, editor: Editor, sink: InlayHintsSink): Boolean {
         if (!isElementOfInterest(element))
             return true
 
         val hints: MutableList<KotlinCodeVisionHint> = SmartList() // todo: pair?
 
-        // todo: consider too-many-usages, in-background-search, read-lock
         if (settings.showUsages)
             searchUsages(element)?.let { hints += it }
 
@@ -61,36 +68,48 @@ class KotlinCodeVisionHintsCollector(editor: Editor, val settings: KotlinCodeVis
 
     private fun searchFunctionOverrides(function: KtFunction): KotlinCodeVisionHint? {
         return LightClassUtil.getLightClassMethod(function)?.let { it ->
-            val overridingNum = OverridingMethodsSearch.search(it, true).count()
+            val countingProcessor = CountingUpToLimitProcessor<Any>(INHERITANCE_LIMIT)
+            OverridingMethodsSearch.search(it, true).forEach(countingProcessor)
+            val (overridingNum, limitReached) = countingProcessor
+
             if (overridingNum > 0) {
-                if (function.isAbstract()) FunctionImplementations(overridingNum) else FunctionOverrides(overridingNum)
+                if (function.isAbstract()) FunctionImplementations(overridingNum, limitReached)
+                else FunctionOverrides(overridingNum, limitReached)
             } else null
         }
     }
 
     private fun searchClassInheritors(clazz: KtClass): KotlinCodeVisionHint? {
         return clazz.toLightClass()?.let {
-            val inheritorsNum = DirectClassInheritorsSearch.search(it, clazz.useScope, true).count()
+            val countingProcessor = CountingUpToLimitProcessor<Any>(INHERITANCE_LIMIT)
+            DirectClassInheritorsSearch.search(it, clazz.useScope, true).forEach(countingProcessor)
+            val (inheritorsNum, limitReached) = countingProcessor
             if (inheritorsNum > 0) {
-                if (clazz.isInterface()) InterfaceImplementations(inheritorsNum) else ClassInheritors(inheritorsNum)
+                if (clazz.isInterface()) InterfaceImplementations(inheritorsNum, limitReached)
+                else ClassInheritors(inheritorsNum, limitReached)
             } else null
         }
     }
 
     private fun searchPropertyOverriding(property: KtProperty): KotlinCodeVisionHint? {
-        var overridingNum = 0
-        for (method in property.toPossiblyFakeLightMethods()) {
-            method.forEachOverridingMethod {
-                overridingNum++
-                true
-            }
-        }
-        return if (overridingNum > 0) PropertyOverrides(overridingNum) else null
+        val countingProcessor = CountingUpToLimitProcessor<PsiElement>(INHERITANCE_LIMIT)
+        KotlinDefinitionsSearcher.processPropertyImplementationsMethods(
+            property.toPossiblyFakeLightMethods(),
+            GlobalSearchScope.allScope(property.project),
+            countingProcessor
+        )
+        val (overridesNum, limitReached) = countingProcessor
+        return if (overridesNum > 0) PropertyOverrides(overridesNum, limitReached) else null
     }
 
     private fun searchUsages(element: PsiElement): Usages? {
-        val usagesNum = element.searchReferencesOrMethodReferences().count()
-        return if (usagesNum > 0) Usages(usagesNum) else null
+        val countingProcessor = CountingUpToLimitProcessor<Any>(USAGES_LIMIT)
+        if (element is KtClass)
+            ReferencesSearch.search(element).forEach(countingProcessor)
+        else MethodReferencesSearch.search(element.getRepresentativeLightMethod()).forEach(countingProcessor)
+
+        val (usagesNum, limitReached) = countingProcessor
+        return if (usagesNum > 0) Usages(usagesNum, limitReached) else null
     }
 
     @Suppress("GrazieInspection")
@@ -156,4 +175,15 @@ class KotlinCodeVisionHintsCollector(editor: Editor, val settings: KotlinCodeVis
     }
 
 
+    class CountingUpToLimitProcessor<T>(private val limit: Int) : Processor<T> {
+        private val findings = mutableSetOf<T>() // for properties, it's crucial not to calculate setters and getters together
+
+        override fun process(t: T): Boolean {
+            findings.add(t)
+            return findings.size < limit
+        }
+
+        operator fun component1(): Int = findings.size
+        operator fun component2(): Boolean = findings.size >= limit
+    }
 }
