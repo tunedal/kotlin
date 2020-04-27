@@ -2556,7 +2556,6 @@ public final class kotlin/collections/builders/MapBuilder : java/util/Map, kotli
 	public fun put (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 	public fun putAll (Ljava/util/Map;)V
 	public fun remove (Ljava/lang/Object;)Ljava/lang/Object;
-	public final fun set (Ljava/lang/Object;Ljava/lang/Object;)V
 	public final fun size ()I
 	public fun toString ()Ljava/lang/String;
 	public final fun values ()Ljava/util/Collection;
