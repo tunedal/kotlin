@@ -48,7 +48,7 @@ class IntersectionTypeConstructor(typesToIntersect: Collection<KotlinType>) : Ty
     override fun getSupertypes(): Collection<KotlinType> = intersectedTypes
 
     fun createScopeForKotlinType(): MemberScope =
-        TypeIntersectionScope.create("member scope for intersection type $this", intersectedTypes)
+        TypeIntersectionScope.create("member scope for intersection type", intersectedTypes)
 
     override fun isFinal(): Boolean = false
 
