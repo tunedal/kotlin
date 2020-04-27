@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.resolve.calls.components
 import org.jetbrains.kotlin.builtins.UnsignedTypes
 import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.builtins.isFunctionTypeOrSubtype
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.resolve.calls.tower.VisibilityError
 import org.jetbrains.kotlin.resolve.sam.SAM_LOOKUP_NAME
 import org.jetbrains.kotlin.resolve.sam.getFunctionTypeForPossibleSamType
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.model.KotlinTypeMarker
 import org.jetbrains.kotlin.types.model.TypeConstructorMarker
 import org.jetbrains.kotlin.types.model.typeConstructor
@@ -509,11 +511,15 @@ private fun KotlinResolutionCandidate.getExpectedTypeWithSAMConversion(
     }
 
     val argumentIsFunctional = when (argument) {
-        is SimpleKotlinCallArgument -> argument.receiver.stableType.isFunctionType
+        is SimpleKotlinCallArgument -> argument.receiver.stableType.isFunctionTypeOrSubtype
         is LambdaKotlinCallArgument, is CallableReferenceKotlinCallArgument -> true
         else -> false
     }
     if (!argumentIsFunctional) return null
+
+    if (argument is SimpleKotlinCallArgument) {
+        if (KotlinTypeChecker.DEFAULT.isSubtypeOf(argument.receiver.stableType, candidateParameter.type)) return null
+    }
 
     val originalExpectedType = argument.getExpectedType(candidateParameter.original, callComponents.languageVersionSettings)
 

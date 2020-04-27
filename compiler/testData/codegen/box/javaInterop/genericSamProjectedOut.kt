@@ -1,5 +1,6 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // TARGET_BACKEND: JVM
+// IGNORE_BACKEND: JVM_IR
 // WITH_RUNTIME
 // FILE: example/Hello.java
 package example;
