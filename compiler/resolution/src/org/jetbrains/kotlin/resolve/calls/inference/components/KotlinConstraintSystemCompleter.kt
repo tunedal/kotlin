@@ -561,7 +561,7 @@ class KotlinConstraintSystemCompleter(
         if (typeConstructor is TypeVariableTypeConstructor && typeConstructor in notFixedTypeVariables) {
             val variableWithConstraints = notFixedTypeVariables.getValue(typeConstructor)
 
-//            fixVariablesInsideConstraints(variableWithConstraints, argumentOutputType, topLevelAtoms, topLevelType, variablesSeen + typeConstructor)
+            fixVariablesInsideConstraints(variableWithConstraints, argumentOutputType, topLevelAtoms, topLevelType, variablesSeen + typeConstructor)
 
             if (variableFixationFinder.isTypeVariableHasProperConstraint(this, typeConstructor)) {
                 val isPostponedVariable = variableWithConstraints.typeVariable in postponedTypeVariables

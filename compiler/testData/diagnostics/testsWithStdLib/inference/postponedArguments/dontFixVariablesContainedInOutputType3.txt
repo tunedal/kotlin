@@ -1,0 +1,3 @@
+package
+
+public val x: kotlin.collections.Map<kotlin.String, kotlin.String>
