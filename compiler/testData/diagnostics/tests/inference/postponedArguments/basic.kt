@@ -1,6 +1,6 @@
-import kotlin.reflect.KFunction1
-
 // !DIAGNOSTICS: -UNUSED_VARIABLE -UNUSED_EXPRESSION -UNUSED_PARAMETER -UNUSED_ANONYMOUS_PARAMETER
+
+import kotlin.reflect.KFunction1
 
 fun foo(i: Int) {}
 fun foo(s: String) {}

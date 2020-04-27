@@ -448,6 +448,13 @@ class KotlinConstraintSystemCompleter(
         val atom = argument.atom
         val parametersFromConstraints = parameterTypesInfo.parametersFromConstraints
         val parametersFromDeclaration = prependReceiverTypeIfItIsExtensionFunction(parameterTypesInfo)
+
+        val resultType = resultTypeResolver.findResultType(
+            this as Context,
+            notFixedTypeVariables.getValue(expectedTypeVariable.constructor),
+            TypeVariableDirectionCalculator.ResolveDirection.TO_SUPERTYPE
+        )
+
         val allParameterTypes =
             (parametersFromConstraints.orEmpty() + parametersFromDeclaration?.map { it.wrapToTypeWithKind() }).filterNotNull()
 
@@ -457,13 +464,17 @@ class KotlinConstraintSystemCompleter(
         val variablesForParameterTypes = createTypeVariablesForParameters(argument, allParameterTypes) ?: return null
         val returnValueVariable = createTypeVariableForReturnType(argument) ?: return null
 
-        val functionDescriptor = when (argument) {
-            is LambdaWithTypeVariableAsExpectedTypeAtom ->
-                getFunctionDescriptor(expectedTypeVariable.builtIns, variablesForParameterTypes.size, parameterTypesInfo.isSuspend)
-            is PostponedCallableReferenceAtom ->
-                getKFunctionDescriptor(expectedTypeVariable.builtIns, variablesForParameterTypes.size, parameterTypesInfo.isSuspend)
-            else -> null
-        } ?: return null
+        val functionDescriptor = if ((resultType as KotlinType).isBuiltinFunctionalType) {
+            getFunctionDescriptor(expectedTypeVariable.builtIns, variablesForParameterTypes.size, parameterTypesInfo.isSuspend).typeConstructor
+        } else {
+            when (argument) {
+                is LambdaWithTypeVariableAsExpectedTypeAtom ->
+                    getFunctionDescriptor(expectedTypeVariable.builtIns, variablesForParameterTypes.size, parameterTypesInfo.isSuspend)
+                is PostponedCallableReferenceAtom ->
+                    getKFunctionDescriptor(expectedTypeVariable.builtIns, variablesForParameterTypes.size, parameterTypesInfo.isSuspend)
+                else -> null
+            }?.typeConstructor ?: return null
+        }
 
         val isExtensionFunctionType = parameterTypesInfo.annotations.hasExtensionFunctionAnnotation()
         val areAllParameterTypesFromDeclarationSpecified =
@@ -497,7 +508,7 @@ class KotlinConstraintSystemCompleter(
 
         val nexExpectedType = KotlinTypeFactory.simpleType(
             annotations,
-            functionDescriptor.typeConstructor,
+            functionDescriptor,
             variablesForParameterTypes + returnValueVariable.defaultType.asTypeProjection(),
             parameterTypesInfo.isNullable
         )
@@ -580,7 +591,17 @@ class KotlinConstraintSystemCompleter(
             }
         } else if (type.arguments.isNotEmpty()) {
             for (argument in type.arguments) {
-                fixVariablesInsideType(argument.type, topLevelAtoms, argumentOutputType, topLevelType, variablesSeen)
+                if (!argument.isStarProjection) {
+                    fixVariablesInsideType(
+                        argument.type,
+                        topLevelAtoms,
+                        argumentOutputType,
+                        topLevelType,
+                        variablesSeen
+                    )
+                } else {
+                    println(1)
+                }
             }
         }
     }

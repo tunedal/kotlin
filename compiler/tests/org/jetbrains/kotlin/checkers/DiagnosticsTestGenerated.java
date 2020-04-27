@@ -11111,6 +11111,11 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTestWithFirVali
                     runTest("compiler/testData/diagnostics/tests/inference/postponedArguments/basic.kt");
                 }
 
+                @TestMetadata("callableReferences.kt")
+                public void testCallableReferences() throws Exception {
+                    runTest("compiler/testData/diagnostics/tests/inference/postponedArguments/callableReferences.kt");
+                }
+
                 @TestMetadata("lackOfDeepIncorporation.kt")
                 public void testLackOfDeepIncorporation() throws Exception {
                     runTest("compiler/testData/diagnostics/tests/inference/postponedArguments/lackOfDeepIncorporation.kt");
