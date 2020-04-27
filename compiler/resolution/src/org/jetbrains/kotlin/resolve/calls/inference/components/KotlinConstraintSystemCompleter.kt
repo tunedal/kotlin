@@ -599,8 +599,6 @@ class KotlinConstraintSystemCompleter(
                         topLevelType,
                         variablesSeen
                     )
-                } else {
-                    println(1)
                 }
             }
         }
