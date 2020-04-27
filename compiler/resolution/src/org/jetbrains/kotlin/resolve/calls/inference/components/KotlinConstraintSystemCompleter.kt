@@ -121,31 +121,7 @@ class KotlinConstraintSystemCompleter(
         collectVariablesFromContext: Boolean,
         analyze: (PostponedResolvedAtom) -> Unit
     ) {
-        val postponedArguments = getOrderedNotAnalyzedPostponedArguments(topLevelAtoms)
-
-        val dependencyProvider = TypeVariableDependencyInformationProvider(notFixedTypeVariables, postponedArguments, topLevelType, this)
-
-        while (true) {
-            val variableForFixation = getVariableReadyForFixation(
-                completionMode, topLevelAtoms, topLevelType, collectVariablesFromContext, postponedArguments
-            ) ?: break
-
-            val variableConstructor = variableForFixation.variable
-            val v = variableForFixation.variable
-            val variableWithConstraints = notFixedTypeVariables.getValue(variableConstructor)
-            val isIndependentVariable =
-                variableFixationFinder.isIndependentVariable(this, variableConstructor, postponedArguments, topLevelType)
-
-            if (!postponedArguments.any { it.expectedType?.contains { v1 -> v == v1.typeConstructor() } == true } && !postponedArguments.any { it is PostponedAtomWithRevisableExpectedType && it.revisedExpectedType?.contains { v1 -> v == v1.typeConstructor() } == true }) {
-                if (variableForFixation.hasProperConstraint && isIndependentVariable) {
-                    fixVariable(this, variableWithConstraints, topLevelAtoms)
-                    continue
-                }
-            }
-            break
-        }
-
-        while (true) {
+        loop@ while (true) {
             val postponedArguments = getOrderedNotAnalyzedPostponedArguments(topLevelAtoms)
 
             val isThereAnyReadyForFixationVariable = isThereAnyReadyForFixationVariable(
@@ -177,7 +153,9 @@ class KotlinConstraintSystemCompleter(
                         argument.run { safeAs<PostponedAtomWithRevisableExpectedType>()?.revisedExpectedType ?: expectedType }
 
                     if (expectedType != null && expectedType.isBuiltinFunctionalTypeOrSubtype) {
-                        fixVariablesForParameterTypes(expectedType, postponedArguments, argument.outputType, topLevelType)
+                        if (fixVariablesForParameterTypes(expectedType, postponedArguments, topLevelType, topLevelAtoms)) {
+                            continue@loop
+                        }
                     }
                 }
 
@@ -572,7 +550,7 @@ class KotlinConstraintSystemCompleter(
         if (typeConstructor is TypeVariableTypeConstructor && typeConstructor in notFixedTypeVariables) {
             val variableWithConstraints = notFixedTypeVariables.getValue(typeConstructor)
 
-            fixVariablesInsideConstraints(variableWithConstraints, argumentOutputType, topLevelAtoms, topLevelType, variablesSeen + typeConstructor)
+//            fixVariablesInsideConstraints(variableWithConstraints, argumentOutputType, topLevelAtoms, topLevelType, variablesSeen + typeConstructor)
 
             if (variableFixationFinder.isTypeVariableHasProperConstraint(this, typeConstructor)) {
                 val isPostponedVariable = variableWithConstraints.typeVariable in postponedTypeVariables
@@ -604,15 +582,49 @@ class KotlinConstraintSystemCompleter(
         }
     }
 
+    private fun getAllV(type: KotlinType, d: TypeVariableDependencyInformationProvider): List<TypeVariableTypeConstructor> {
+        return when {
+            type.constructor is TypeVariableTypeConstructor -> {
+                listOf(type.constructor as TypeVariableTypeConstructor) + d.constrainEdges[type.constructor].orEmpty().map { it as TypeVariableTypeConstructor }
+            }
+            type.arguments.isNotEmpty() -> {
+                type.arguments.map { getAllV(it.type, d) }.flatten()
+            }
+            else -> listOf()
+        }
+    }
+
     private fun Context.fixVariablesForParameterTypes(
         type: KotlinType,
-        topLevelAtoms: List<ResolvedAtom>,
-        argumentOutputType: KotlinType?,
-        topLevelType: UnwrappedType
-    ) {
-        for (parameter in type.arguments.dropLast(1)) {
-            fixVariablesInsideType(parameter.type, topLevelAtoms, argumentOutputType, topLevelType)
-        }
+        postponedArguments: List<PostponedResolvedAtom>,
+        topLevelType: UnwrappedType,
+        topLevelAtoms: List<ResolvedAtom>
+    ): Boolean {
+        val d = TypeVariableDependencyInformationProvider(notFixedTypeVariables, postponedArguments, topLevelType, this)
+        val tvs = type.arguments.dropLast(1).map { getAllV(it.type, d) }.flatten()
+
+        val variableForFixation = variableFixationFinder.findFirstVariableForFixation(
+            this,
+            tvs,
+            postponedArguments,
+            ConstraintSystemCompletionMode.FULL,
+            topLevelType
+        ) ?: return false
+
+        if (!variableForFixation.hasProperConstraint)
+            return false
+
+        fixVariable(this, notFixedTypeVariables.getValue(variableForFixation.variable), topLevelAtoms)
+        return true
+
+//        for (parameter in type.arguments.dropLast(1)) {
+//            val
+//
+//
+//
+//
+////            fixVariablesInsideType(parameter.type, postponedArguments, topLevelType)
+//        }
     }
 
     private fun prependReceiverTypeIfItIsExtensionFunction(parameterTypesInfo: ParameterTypesInfo): List<UnwrappedType?>? {

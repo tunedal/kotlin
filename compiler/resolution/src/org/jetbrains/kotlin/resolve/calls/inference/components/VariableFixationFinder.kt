@@ -113,29 +113,6 @@ class VariableFixationFinder(
         } ?: false
     }
 
-    fun isIndependentVariable(
-        c: Context,
-        variableConstructor: TypeConstructorMarker,
-        postponedKtPrimitives: List<PostponedResolvedAtomMarker>,
-        topLevelType: KotlinTypeMarker
-    ): Boolean {
-        if (variableConstructor !in c.notFixedTypeVariables)
-            return false
-
-        val variableWithConstraints = c.notFixedTypeVariables.getValue(variableConstructor)
-        val variable = variableWithConstraints.typeVariable
-
-        if (variable is TypeVariableForCallableReferenceParameterType || variable is TypeVariableForCallableReferenceReturnType || variable is TypeVariableForLambdaReturnType || variable is TypeVariableForLambdaParameterType) {
-            return false
-        }
-
-        val dependencyProvider = TypeVariableDependencyInformationProvider(c.notFixedTypeVariables, postponedKtPrimitives, topLevelType, c)
-
-        return (!dependencyProvider.isVariableRelatedToTopLevelType(variableConstructor) || variableWithConstraints.constraints.any { it.kind == ConstraintKind.EQUALITY }) && variableWithConstraints.constraints.all { constraint ->
-            with(c) { !constraint.type.contains { it.typeConstructor() is TypeVariableTypeConstructor } }
-        }
-    }
-
     private fun Context.findTypeVariableForFixation(
         allTypeVariables: List<TypeConstructorMarker>,
         postponedArguments: List<PostponedResolvedAtomMarker>,

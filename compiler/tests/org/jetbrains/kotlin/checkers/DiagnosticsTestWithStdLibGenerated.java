@@ -3094,6 +3094,11 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
                 runTest("compiler/testData/diagnostics/testsWithStdLib/inference/postponedArguments/dontFixVariablesContainedInOutputType3.kt");
             }
 
+            @TestMetadata("elvis.kt")
+            public void testElvis() throws Exception {
+                runTest("compiler/testData/diagnostics/testsWithStdLib/inference/postponedArguments/elvis.kt");
+            }
+
             @TestMetadata("fixIndependentVariables.kt")
             public void testFixIndependentVariables() throws Exception {
                 runTest("compiler/testData/diagnostics/testsWithStdLib/inference/postponedArguments/fixIndependentVariables.kt");

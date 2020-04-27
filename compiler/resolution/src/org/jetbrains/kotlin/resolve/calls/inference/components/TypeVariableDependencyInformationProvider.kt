@@ -31,7 +31,7 @@ class TypeVariableDependencyInformationProvider(
     private val typeSystemContext: TypeSystemInferenceExtensionContext
 ) {
     // not oriented edges
-    private val constrainEdges: MutableMap<TypeConstructorMarker, MutableSet<TypeConstructorMarker>> = hashMapOf()
+    val constrainEdges: MutableMap<TypeConstructorMarker, MutableSet<TypeConstructorMarker>> = hashMapOf()
 
     // oriented edges
     private val postponeArgumentsEdges: MutableMap<TypeConstructorMarker, MutableSet<TypeConstructorMarker>> = hashMapOf()
