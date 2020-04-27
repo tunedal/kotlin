@@ -11,16 +11,16 @@ FILE: main.kt
             super<R|kotlin/Any|>()
         }
 
-        @R|allopen/Open|() public open fun foo(): R|kotlin/Unit| {
+        public open fun foo(): R|kotlin/Unit| {
         }
 
     }
-    public final class B : R|A| {
+    @R|allopen/Open|() public open class B : R|A| {
         public constructor(): R|B| {
             super<R|A|>()
         }
 
-        public final override fun foo(): R|kotlin/Unit| {
+        public open override fun foo(): R|kotlin/Unit| {
         }
 
     }

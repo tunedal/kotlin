@@ -10,12 +10,12 @@ import allopen.Open
 
 @Open
 class A {
-    @Open
     fun foo() {
 
     }
 }
 
+@Open
 class B : A() {
     override fun foo() {
 

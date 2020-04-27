@@ -20,6 +20,9 @@ class AllOpenStatusTransformer(session: FirSession) : FirStatusTransformerExtens
         return status.transform(modality = Modality.OPEN)
     }
 
+    override val mode: Mode
+        get() = Mode.ALL_IN_ANNOTATED_ELEMENT
+
     override val annotations: Set<AnnotationFqn> = setOf(FqName.fromSegments(listOf("allopen", "Open")))
 
     override val metaAnnotations: Set<AnnotationFqn>
