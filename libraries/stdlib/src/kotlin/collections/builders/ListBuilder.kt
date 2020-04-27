@@ -130,12 +130,11 @@ internal class ListBuilder<E> private constructor(
         return ListBuilder(array, offset + fromIndex, toIndex - fromIndex, isReadOnly, this)
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private fun ensureCapacity(minCapacity: Int) {
         if (backing != null) throw IllegalStateException() // just in case somebody casts subList to ListBuilder
         if (minCapacity > array.size) {
-            var newSize = array.size * 3 / 2
-            if (minCapacity > newSize)
-                newSize = minCapacity
+            val newSize = ArrayDeque.newCapacity(array.size, minCapacity)
             array = array.copyOfUninitializedElements(newSize)
         }
     }

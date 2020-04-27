@@ -674,6 +674,7 @@ public abstract class kotlin/collections/AbstractSet : kotlin/collections/Abstra
 }
 
 public final class kotlin/collections/ArrayDeque : kotlin/collections/AbstractMutableList {
+	public static final field Companion Lkotlin/collections/ArrayDeque$Companion;
 	public fun <init> ()V
 	public fun <init> (I)V
 	public fun <init> (Ljava/util/Collection;)V
