@@ -26,11 +26,8 @@ class CompletionModeCalculator {
             candidate: KotlinResolutionCandidate,
             expectedType: UnwrappedType?,
             returnType: UnwrappedType?,
-            trivialConstraintTypeInferenceOracle: TrivialConstraintTypeInferenceOracle,
-            inferenceSession: InferenceSession
+            trivialConstraintTypeInferenceOracle: TrivialConstraintTypeInferenceOracle
         ): ConstraintSystemCompletionMode = with(candidate) {
-            inferenceSession.computeCompletionMode(candidate)?.let { return it }
-
             val csCompleterContext = getSystem().asConstraintSystemCompleterContext()
 
             if (candidate.isErrorCandidate()) return ConstraintSystemCompletionMode.FULL
