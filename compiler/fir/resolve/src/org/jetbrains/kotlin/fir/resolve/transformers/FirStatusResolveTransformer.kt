@@ -9,16 +9,13 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.fir.FirEffectiveVisibility
-import org.jetbrains.kotlin.fir.FirElement
-import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.expressions.FirBlock
 import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.extensions.extensionPointService
 import org.jetbrains.kotlin.fir.extensions.statusTransformerExtensions
-import org.jetbrains.kotlin.fir.firEffectiveVisibility
 import org.jetbrains.kotlin.fir.visitors.CompositeTransformResult
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.fir.visitors.compose
@@ -148,9 +145,9 @@ private class FirStatusResolveTransformer(override val session: FirSession) :
         return block.compose()
     }
 
-    private fun prepareStatus(declaration: FirDeclaration, status: FirDeclarationStatus): FirDeclarationStatus {
+    private fun <D> prepareStatus(declaration: D, status: FirDeclarationStatus): FirDeclarationStatus where D : FirDeclaration, D : FirAnnotationContainer {
         var result = status
-        session.extensionPointService.statusTransformerExtensions.forEach {
+        session.extensionPointService.statusTransformerExtensions.forDeclaration(declaration).forEach {
             result = it.transformStatus(declaration, status)
         }
         return result
