@@ -57,7 +57,7 @@ private class MutedTest(
     init {
         val noQuoteKey = key.replace("`", "")
         val beforeParamsKey = noQuoteKey.substringBefore("[")
-        val params = noQuoteKey.substringAfterWithDelimiter("[", "")
+        val params = noQuoteKey.substringAfterWithDelimiter("[", "").replace(";", ",")
 
         methodKey = (beforeParamsKey.substringAfterLast(".", "") + params)
             .also {
