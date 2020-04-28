@@ -134,7 +134,7 @@ fun test1() {
     val x36 = selectPosponedArgument3({ <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int")!>it<!> }, { <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int")!>it<!> }, { x: Int -> x })
     val x37 = selectPosponedArgument3({ <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int")!>it<!> }, { x: Number -> x }, { x: Int -> x })
     val x38 = selectPosponedArgument3Revert({ <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int")!>it<!> }, { <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int")!>it<!> }, { x: Int -> x })
-    val x39 = selectPosponedArgument3Revert({ <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int")!>it<!> }, { x: Number -> x }, { x: Int -> x })
+    val x39 = selectPosponedArgument3Revert({ <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Number")!>it<!> }, { x: Number -> x }, { x: Int -> x })
 
     val x40 = select(id<Int.(String) -> Unit> {}, { x: Int, y: String -> x })
 
